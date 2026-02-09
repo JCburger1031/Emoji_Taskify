@@ -46,12 +46,14 @@
     .controls { display: flex; gap: 10px; margin-bottom: 15px; }
 
     input[type=text] {
-      flex: 1;
-      padding: 10px;
-      border-radius: 5px;
-      border: 2px solid #ccc;
-      color: #000;
-      background: #fff;
+  flex: 1;
+  padding: 10px;
+  border-radius: 5px;
+  border: 2px solid #ccc;
+  color: var(--text);       /* <-- use variable */
+  background: var(--card);  /* <-- use variable */
+}
+
     }
 
     input[type=text]:focus {
@@ -269,3 +271,4 @@
 </script>
 </body>
 </html>
+
