@@ -1,156 +1,4 @@
-<!DOCTYPE html>
-<html lang="en">
- 
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Justin Emoji Taskify – Interactive Task Manager</title>
-  <style>
-    :root {
-      --bg: #f9fafb;
-      --card: #f9fafb;
-      --text: #fbfbfb;
-      --accent: #2563eb;
-      --completed: #16a34a;
-      --hover: #e5e7eb;
-    }
-
-    body.dark {
-      --bg: #1e1e1e;
-      --card: #1f2933;
-      --text: #f9fafb;
-      --hover: #374151;
-    }
-
-    * { box-sizing: border-box; }
-
-    body {
-      margin: 0;
-      font-family: Arial, sans-serif;
-      background: var(--bg);
-      color: var(--text);
-      display: flex;
-      justify-content: center;
-      padding: 30px;
-    }
-
-    .app {
-      width: 100%;
-      max-width: 600px;
-      background: var(--card);
-      border-radius: 10px;
-      padding: 20px;
-      box-shadow: 0 10px 20px rgba(0,0,0,.1);
-    }
-
-    h1 { text-align: center; }
-
-    .controls {
-      display: flex;
-      gap: 10px;
-      margin-bottom: 15px;
-    }
-
-    input[type=text] {
-  flex: 1;
-  padding: 10px;
-  border-radius: 5px;
-  border: 2px solid #ccc;
-  color: #000;              
-  background: #ffffff;     
-}
-
-  li span.text {
-  color: var(--text); 
-}
-
-
-    input[type=text]:focus {
-      border-color: var(--accent);
-      outline: none;
-    }
-
-    button {
-      padding: 10px 14px;
-      border: none;
-      border-radius: 5px;
-      background: var(--accent);
-      color: white;
-      cursor: pointer;
-    }
-
-    button.secondary { background: #3d4658; }
-
-    ul {
-      list-style: none;
-      padding: 0;
-      margin: 0;
-    }
-
-    li {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      padding: 10px;
-      border-radius: 6px;
-      margin-bottom: 6px;
-      transition: background .2s;
-    }
-
-    li:hover { background: var(--hover); }
-
-    li.selected { background: #1e1e1e; }
-
-    li.completed span.text {
-      text-decoration: line-through;
-      color: var(--completed);
-    }
-
-    span.text { flex: 1; cursor: pointer; }
-
-    .counters {
-      display: grid;
-      grid-template-columns: repeat(2,1fr);
-      gap: 6px;
-      margin-top: 10px;
-      font-size: 14px;
-    }
-
-    .footer {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 6px;
-      margin-top: 10px;
-    }
-  </style>
-</head>
-<body>
-  <div class="app">
-    <h1>Emoji Taskify</h1>
-
-    <div class="controls">
-      <input id="taskInput" type="text" placeholder="Enter a task" />
-      <button id="addBtn">Add</button>
-    </div>
-
-    <ul id="taskList"></ul>
-
-    <div class="counters">
-      <div>Total Tasks: <span id="totalCount">0</span></div>
-      <div>Completed: <span id="completedCount">0</span></div>
-      <div>Deleted: <span id="deletedCount">0</span></div>
-      <div>Edited: <span id="editedCount">0</span></div>
-    </div>
-
-    <div class="footer">
-      <button class="secondary" id="sortAsc">Sort A–Z</button>
-      <button class="secondary" id="sortDesc">Sort Z–A</button>
-      <button class="secondary" id="resetSort">Reset</button>
-      <button class="secondary" id="themeToggle">Light/Dark</button>
-    </div>
-  </div>
-
- <script>
+<script>
   const input = document.getElementById('taskInput');
   const list = document.getElementById('taskList');
   const addBtn = document.getElementById('addBtn');
@@ -164,6 +12,7 @@
   let deletedCount = 0;
   let editedCount = 0;
 
+  // ✅ snapshot of original order (NO DUPES)
   let originalOrder = tasks.map(t => ({ ...t }));
 
   function save() {
@@ -180,7 +29,7 @@
   function render() {
     list.innerHTML = '';
 
-    tasks.forEach((task, index) => {
+    tasks.forEach(task => {
       const li = document.createElement('li');
       if (task.completed) li.classList.add('completed');
 
@@ -196,14 +45,14 @@
       const span = document.createElement('span');
       span.textContent = task.text;
       span.className = 'text';
-      span.ondblclick = () => editTask(index, span);
+      span.ondblclick = () => editTask(task.id, span);
 
       const del = document.createElement('button');
       del.textContent = '✖';
       del.onclick = () => {
         if (confirm(`Delete task: ${task.text}?`)) {
-          tasks.splice(index, 1);
-          originalOrder.splice(index, 1);
+          tasks = tasks.filter(t => t.id !== task.id);
+          originalOrder = originalOrder.filter(t => t.id !== task.id);
           deletedCount++;
           save();
           render();
@@ -219,13 +68,17 @@
 
   function addTask() {
     const text = input.value.trim();
-    if (!text) return alert('Empty task please add');
+    if (!text) return alert('Empty task');
 
-    if (tasks.some(t => t.text.toLowerCase() === text.toLowerCase())) {
+    if (tasks.some(t => t.text.toLowerCase() === text.toLowerCase()))
       return alert('Duplicate task');
-    }
 
-    const newTask = { text, completed: false };
+    const newTask = {
+      id: Date.now(),   // ✅ stable ID (fixes reset/delete bugs)
+      text,
+      completed: false
+    };
+
     tasks.push(newTask);
     originalOrder.push({ ...newTask });
 
@@ -234,10 +87,12 @@
     render();
   }
 
-  function editTask(index, span) {
+  function editTask(id, span) {
+    const task = tasks.find(t => t.id === id);
+
     const editInput = document.createElement('input');
     editInput.type = 'text';
-    editInput.value = tasks[index].text;
+    editInput.value = task.text;
 
     span.replaceWith(editInput);
     editInput.focus();
@@ -246,13 +101,12 @@
       const val = editInput.value.trim();
       if (!val) return alert('Empty task');
 
-      if (tasks.some((t, i) =>
-        i !== index && t.text.toLowerCase() === val.toLowerCase())) {
+      if (tasks.some(t => t.id !== id && t.text.toLowerCase() === val.toLowerCase()))
         return alert('Duplicate task');
-      }
 
-      tasks[index].text = val;
-      originalOrder[index].text = val;
+      task.text = val;
+      originalOrder.find(t => t.id === id).text = val;
+
       editedCount++;
       save();
       render();
@@ -275,8 +129,10 @@
     render();
   };
 
+  // ✅ FIXED RESET (NO DUPLICATES + SAVES)
   document.getElementById('resetSort').onclick = () => {
     tasks = originalOrder.map(t => ({ ...t }));
+    save();
     render();
   };
 
@@ -286,12 +142,3 @@
 
   render();
 </script>
-
-  </div>
-
-</body>
-</html>
-
-
-
-
